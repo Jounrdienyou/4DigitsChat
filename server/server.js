@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -12,10 +13,7 @@ const User = require('./models/User');
 const Group = require('./models/Group');
 const generateUniqueCode = require('./utils/generateCode');
 const Message = require('./models/Message');
-
 const app = express();
-const PORT = 5000;
-require('dotenv').config();
 
 // Middleware
 app.use(cors());
@@ -58,7 +56,6 @@ const upload = multer({
 });
 
 // MongoDB connection
-const MONGO_URI = "mongodb+srv://Youssef:%24GHJFttr%23%24%23653GDdd@cluster0.ngjf2q1.mongodb.net/4DigitsChat?retryWrites=true&w=majority&appName=Cluster0";
 mongoose.connect(MONGO_URI);
 
 const db = mongoose.connection;

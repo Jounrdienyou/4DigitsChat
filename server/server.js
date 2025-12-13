@@ -56,7 +56,7 @@ const upload = multer({
 });
 
 // MongoDB connection
-mongoose.connect(MONGO_URI);
+mongoose.connect(process.env.MONGO_URI);
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>4Digits Chat</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="assets/4DChat.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body>
+  <div class="main-container">
+    <div class="side-info-box">
+      <div class="side-info-section">
+        <div class="side-info-header">Requests</div>
+        <div class="side-info-content" id="requests-list"></div>
+      </div>
+      <div class="side-info-section">
+        <div class="side-info-header">Pending</div>
+        <div class="side-info-content" id="pending-list"></div>
+      </div>
+    </div>
+    <div class="menu-container">
+      <button id="join-chat-btn">Join Chat by Code</button>
+      <button id="join-group-btn">Join Group Chat by Code</button>
+      <button id="create-group-btn">Create Group Chat</button>
+      <button id="settings-btn">Settings</button>
+      <div id="admin-panel" class="hidden" style="margin-top:16px;">
+        <div style="background:#0a2752;border:1px solid #82c0ff;border-radius:12px;padding:12px;color:#e3ecfa;box-shadow:0 0 3px 0.5px #82c0ff;">
+          <div style="font-weight:700;margin-bottom:10px;color:#7baee6;">Admin Panel</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input id="admin-remove-user-code" class="settings-input" placeholder="User code" maxlength="4" style="max-width:120px;" />
+              <button id="admin-remove-user-btn" class="settings-btn" style="background:#ef4444;">Execute</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input id="admin-remove-group-code" class="settings-input" placeholder="Group code" maxlength="4" style="max-width:120px;" />
+              <button id="admin-remove-group-btn" class="settings-btn" style="background:#ef4444;">Execute</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input id="admin-join-group-code" class="settings-input" placeholder="Group code" maxlength="4" style="max-width:120px;" />
+              <button id="admin-join-group-btn" class="settings-btn" style="background:#10b981;">Execute</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button id="admin-show-users-btn" class="settings-btn" style="background:#2563eb;">Show User List</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button id="admin-fix-profile-pictures-btn" class="settings-btn" style="background:#f59e0b;">Fix Profile Pictures</button>
+            </div>
+            <div id="admin-users-list" style="max-height:180px;overflow:auto;border:1px solid #174ea6;border-radius:8px;padding:8px;background:#00193b;display:none;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="chat-list-container">
+    </div>
+  </div>
+
+  <!-- Fullscreen Blend Overlay -->
+  <div id="blend-overlay" class="hidden"></div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="settings-content">
+      <button id="close-settings" class="close-btn">&times;</button>
+      <h2>Settings</h2>
+      <div class="settings-section">
+        <label for="username" class="settings-label">Username</label>
+        <div class="username-row">
+          <input type="text" id="username" class="settings-input" value="user843" readonly>
+          <button id="edit-username-btn" class="settings-btn">Edit</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <label class="settings-label">Your 4Digits Code</label>
+        <div class="settings-code"></div>
+      </div>
+      <div class="settings-section">
+        <label class="settings-label">Profile Picture</label>
+        <div class="profile-pic-row">
+          <img src="https://api.dicebear.com/7.x/thumbs/svg?seed=user843" alt="Profile" class="profile-pic" id="profile-pic-preview">
+          <input type="file" id="profile-pic-input" accept="image/*" style="display:none;">
+          <button id="edit-pic-btn" class="settings-btn">Edit</button>
+          <div id="pic-edit-controls" style="display:none;">
+            <button id="import-pic-btn" class="settings-btn">Import</button>
+            <button id="save-pic-btn" class="settings-btn">Save</button>
+            <button id="remove-pic-btn" class="settings-btn">Remove</button>
+            <button id="cancel-pic-btn" class="settings-btn">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <div class="profile-actions-row">
+        <button id="restore-profile-btn" class="settings-btn profile-action-btn">Restore Profile</button>
+        <button id="cleanup-profiles-btn" class="settings-btn profile-action-btn">Cleanup Old Profiles</button>
+      </div>
+      <!-- Set/Change Password Section -->
+      <div class="settings-section" id="password-section" style="margin-top:32px;">
+        <label class="settings-label">Set/Change Password</label>
+        <div class="password-row" style="display:flex;align-items:center;gap:10px;">
+          <input type="password" id="new-password-input" class="settings-input" placeholder="Enter new password" minlength="4" style="margin-bottom:0;flex:1;" readonly>
+          <button id="password-visibility-btn" type="button" style="background:none;border:none;outline:none;cursor:pointer;font-size:1.2em;color:#2563eb;">
+            <i class="fa-solid fa-eye-slash"></i>
+          </button>
+          <button id="password-edit-btn" type="button" style="background:none;border:none;outline:none;cursor:pointer;font-size:1.2em;color:#2563eb;">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </button>
+        </div>
+        <div id="password-status" style="margin-top:8px;font-size:0.95em;color:#1e40af;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Group Chat Modal -->
+  <div id="create-group-modal" class="modal hidden">
+    <div class="modal-content group-creation-content">
+      <div class="modal-header">
+      <h2>Create Group Chat</h2>
+        <button class="close-btn" onclick="closeGroupCreationModal()">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Step 1: Group Details -->
+        <div id="group-details-step" class="group-step">
+          <div class="form-group">
+            <label for="group-name">Group Name:</label>
+            <input type="text" id="group-name" placeholder="Enter group name" maxlength="50">
+          </div>
+          <div class="form-group">
+            <label>Group Icon:</label>
+            <div class="group-icon-upload">
+              <img id="group-icon-preview" src="https://api.dicebear.com/7.x/thumbs/svg?seed=group" alt="Group Icon Preview">
+              <input type="file" id="group-icon-input" accept="image/*">
+              <button onclick="uploadGroupIcon()">Upload</button>
+              <button onclick="resetGroupIcon()">Reset</button>
+            </div>
+          </div>
+          <button class="next-btn" onclick="nextToMembersStep()">Next: Add Members</button>
+        </div>
+
+        <!-- Step 2: Add Members -->
+        <div id="members-step" class="group-step hidden">
+          <div class="form-group">
+            <label>Select Members:</label>
+            <div class="members-selection">
+              <div id="selected-members" class="selected-members-list"></div>
+              <div class="contacts-list">
+                <h4>Your Contacts:</h4>
+                <div id="contacts-for-group" class="contacts-grid"></div>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="invitation-message">Invitation Message:</label>
+            <textarea id="invitation-message" placeholder="You have been invited to join this group" rows="3"></textarea>
+          </div>
+          <div class="step-buttons">
+            <button class="back-btn" onclick="backToDetailsStep()">Back</button>
+            <button class="create-btn" onclick="createGroup()">Create Group</button>
+          </div>
+        </div>
+
+        <!-- Step 3: Group Created Success -->
+        <div id="group-success-step" class="group-step hidden">
+          <div class="success-content">
+            <i class="fa-solid fa-check-circle success-icon"></i>
+            <h3>Group Created Successfully!</h3>
+            <div class="group-info">
+              <div class="group-code-display">
+                <label>Group Code:</label>
+                <div class="code-box" id="group-code-display"></div>
+                <button onclick="copyGroupCode()" class="copy-code-btn">
+                  <i class="fa-solid fa-copy"></i> Copy Code
+                </button>
+              </div>
+              <div class="group-details">
+                <p><strong>Group Name:</strong> <span id="created-group-name"></span></p>
+                <p><strong>Members:</strong> <span id="created-group-members"></span></p>
+              </div>
+            </div>
+            <button class="done-btn" onclick="closeGroupCreationModal()">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Join Chat by Code Modal -->
+  <div id="join-chat-modal" class="modal hidden">
+    <div class="settings-content">
+      <button id="close-join-chat" class="close-btn">&times;</button>
+      <h2>Join Chat by Code</h2>
+      <div class="settings-section">
+        <div class="join-chat-row">
+          <div class="join-chat-input-group">
+            <label for="join-code" class="settings-label">Enter your friend's 4Digits Code</label>
+            <input type="text" id="join-code" class="settings-input" placeholder="1234" maxlength="4" pattern="\d{4}" inputmode="numeric" autocomplete="off">
+          </div>
+          <button id="submit-join-code" class="settings-btn join-chat-btn">Add Contact</button>
+        </div>
+      </div>
+      <div class="join-chat-tutorial">
+        <p>To add your friends, let them go to the settings <br>and share their 4Digits Code, then you have to type<br> this code in here. Next they need to accept your<br> request to chat together.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Join Group by Code Modal -->
+  <div id="join-group-modal" class="modal hidden">
+    <div class="settings-content">
+      <button id="close-join-group" class="close-btn">&times;</button>
+      <h2>Join Group by Code</h2>
+      <div class="settings-section">
+        <div class="join-chat-row">
+          <div class="join-chat-input-group">
+            <label for="join-group-code" class="settings-label">Enter the group's 4Digits Code</label>
+            <input type="text" id="join-group-code" class="settings-input" placeholder="1234" maxlength="4" pattern="\d{4}" inputmode="numeric" autocomplete="off">
+          </div>
+          <button id="submit-join-group-code" class="settings-btn join-chat-btn">Join Group</button>
+        </div>
+      </div>
+      <div class="join-chat-tutorial">
+        <p>Ask a member to share the group code. Enter it here to join<br> the conversation instantly.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="notification" class="notification">
+    <div class="notification-title">Notification <span class="notification-dot"></span></div>
+    <div class="notification-message"></div>
+  </div>
+
+  <!-- Admin Password Modal -->
+  <div id="admin-password-modal" class="restore-alert hidden">
+    <div class="restore-alert-content">
+      <div class="restore-alert-header">
+        <h3>Admin Password</h3>
+        <button id="close-admin-password-modal" class="restore-close-btn">&times;</button>
+      </div>
+      <div class="restore-alert-body">
+        <label for="admin-password-input" class="restore-label">Enter admin password</label>
+        <input type="password" id="admin-password-input" class="restore-input" placeholder="Password" maxlength="32" autocomplete="off">
+        <div class="restore-actions">
+          <button id="confirm-admin-password-btn" class="restore-btn confirm-btn">Confirm</button>
+          <button id="cancel-admin-password-btn" class="restore-btn cancel-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Password Modal -->
+  <div id="user-password-modal" class="restore-alert hidden">
+    <div class="restore-alert-content">
+      <div class="restore-alert-header">
+        <h3>Profile Password</h3>
+        <button id="close-user-password-modal" class="restore-close-btn">&times;</button>
+      </div>
+      <div class="restore-alert-body">
+        <label for="user-password-input" class="restore-label">Enter your password</label>
+        <input type="password" id="user-password-input" class="restore-input" placeholder="Password" maxlength="32" autocomplete="off">
+        <div class="restore-actions">
+          <button id="confirm-user-password-btn" class="restore-btn confirm-btn">Confirm</button>
+          <button id="cancel-user-password-btn" class="restore-btn cancel-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Restore Profile Modal -->
+  <div id="restore-profile-modal" class="restore-alert hidden">
+    <div class="restore-alert-content">
+      <div class="restore-alert-header">
+        <h3>Restore Profile</h3>
+        <button id="close-restore-modal" class="restore-close-btn">&times;</button>
+      </div>
+      <div class="restore-alert-body">
+        <label for="restore-code-input" class="restore-label">Enter your 4-digit code</label>
+        <input type="text" id="restore-code-input" class="restore-input" placeholder="1234" maxlength="4" pattern="\d{4}" inputmode="numeric" autocomplete="off">
+        <div class="restore-actions">
+          <button id="confirm-restore-btn" class="restore-btn confirm-btn">Restore</button>
+          <button id="cancel-restore-btn" class="restore-btn cancel-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- Chat Interface Modal -->
+  <div id="chat-interface" class="chat-interface hidden">
+    <div class="chat-left-box">
+      <div class="chat-user-info">
+        <img src="" alt="Profile" class="chat-user-pic" id="chat-user-pic">
+        <div class="chat-user-details">
+          <div class="chat-user-name-container">
+          <span class="chat-user-name" id="chat-user-name"></span>
+            <span class="online-status-indicator" id="online-status-indicator"></span>
+          </div>
+          <span class="chat-user-code" id="chat-user-code"></span>
+          <span class="chat-user-last-seen" id="chat-user-last-seen"></span>
+        </div>
+        <button id="group-settings-btn" title="Group Settings" style="margin-left:auto;display:none;background:none;border:none;cursor:pointer;font-size:1.2rem;color:#2563eb;">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+      </div>
+      <div class="call-actions-row" id="call-actions-row">
+        <div class="call-actions" title="Call this contact">
+          <button id="audio-call-btn" class="call-action-btn" title="Start voice call">
+            <i class="fa-solid fa-phone"></i>
+          </button>
+          <button id="video-call-btn" class="call-action-btn" title="Start video call">
+            <i class="fa-solid fa-video"></i>
+          </button>
+        </div>
+      </div>
+      <button id="leave-chat-btn" class="leave-chat-btn">Leave</button>
+    </div>
+    <!-- Chat messages container -->
+    <div class="chat-messages-container" id="chat-messages-container"></div>
+    <div class="chat-input-container">
+      <input type="text" id="chat-message-input" class="chat-message-input" placeholder="Type a message...">
+      <button id="send-message-btn" class="send-message-btn">
+        <i class="fa-solid fa-paper-plane"></i>
+      </button>
+      <button id="send-media-btn" class="send-media-btn">
+        <i class="fa-solid fa-paperclip"></i>
+      </button>
+      <input type="file" id="file-input" accept="*/*" style="display: none;">
+    </div>
+  </div>
+
+  <!-- Call Modal -->
+  <div id="call-modal" class="modal hidden" style="z-index:25000;">
+    <div class="call-wrapper">
+      <div id="call-status-text" class="call-status-text"></div>
+      <div class="call-video-container">
+        <video id="remote-video" class="remote-video" autoplay playsinline></video>
+        <div id="remote-video-overlay" class="video-overlay hidden">
+          <img id="remote-profile-pic" class="video-overlay-pic" src="" alt="Profile">
+        </div>
+        <div id="remote-mute-indicator" class="mute-indicator hidden">
+          <i class="fa-solid fa-microphone-slash"></i>
+        </div>
+        <div id="remote-speaking-indicator" class="speaking-indicator hidden"></div>
+        <video id="local-video" class="local-video" autoplay playsinline muted></video>
+        <div id="local-video-overlay" class="video-overlay hidden">
+          <img id="local-profile-pic" class="video-overlay-pic" src="" alt="Profile">
+        </div>
+        <div id="local-mute-indicator" class="mute-indicator hidden">
+          <i class="fa-solid fa-microphone-slash"></i>
+        </div>
+        <div id="local-speaking-indicator" class="speaking-indicator hidden"></div>
+      </div>
+      <div id="incoming-call-controls" class="call-controls hidden">
+        <button id="accept-call-btn" class="call-btn accept">
+          <i class="fa-solid fa-phone"></i>
+          Accept
+        </button>
+        <button id="decline-call-btn" class="call-btn decline">
+          <i class="fa-solid fa-phone-slash"></i>
+          Decline
+        </button>
+      </div>
+      <div id="active-call-controls" class="call-controls hidden">
+        <button id="toggle-mic-btn" class="call-btn">
+          <i class="fa-solid fa-microphone"></i>
+        </button>
+        <button id="toggle-camera-btn" class="call-btn">
+          <i class="fa-solid fa-video"></i>
+        </button>
+        <button id="end-call-btn" class="call-btn end">
+          <i class="fa-solid fa-phone-slash"></i>
+          End Call
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Info Modal (for group chat profile clicks) -->
+  <div id="user-info-modal" class="modal hidden" style="z-index:20000;">
+    <div class="settings-content" style="max-width:400px;position:relative;">
+      <button id="close-user-info" class="close-btn">&times;</button>
+      <h2>User Information</h2>
+      <div class="settings-section">
+        <div style="text-align:center;margin-bottom:20px;">
+          <img id="user-info-pic" src="" alt="Profile" class="profile-pic" style="width:80px;height:80px;margin:0 auto 10px auto;">
+          <div id="user-info-name" style="font-size:1.2rem;font-weight:600;color:#1e40af;margin-bottom:5px;"></div>
+          <div id="user-info-code" style="font-size:1rem;color:#2563eb;font-weight:500;letter-spacing:1px;"></div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center;">
+          <button id="send-friend-request-btn" class="settings-btn" style="background:#10b981;">Send Friend Request</button>
+          <button id="close-user-info-btn" class="settings-btn" style="background:#6b7280;">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group Settings Modal -->
+  <div id="group-settings-modal" class="modal hidden" style="z-index:20000;">
+    <div class="settings-content" style="max-width:520px;position:relative;">
+      <button id="close-group-settings" class="close-btn">&times;</button>
+      <h2>Group Settings</h2>
+      <div class="settings-section">
+        <label class="settings-label">Group Name</label>
+        <div class="username-row">
+          <input type="text" id="group-settings-name" class="settings-input" placeholder="Group name" maxlength="50">
+        </div>
+      </div>
+      <div class="settings-section">
+        <label class="settings-label">Group Icon</label>
+        <div class="profile-pic-row">
+          <img src="" alt="Group" class="profile-pic" id="group-settings-pic">
+          <input type="file" id="group-settings-pic-input" accept="image/*" style="display:none;">
+          <button id="group-settings-pic-edit" class="settings-btn">Edit</button>
+          <div id="group-settings-pic-controls" style="display:none;gap:8px;">
+            <button id="group-settings-pic-import" class="settings-btn" style="background:#2563eb;color:#fff;box-shadow:0 0 12px rgba(37,99,235,0.6);">Import</button>
+            <button id="group-settings-pic-save" class="settings-btn" style="background:#22c55e;color:#fff;box-shadow:0 0 12px rgba(34,197,94,0.6);">Save</button>
+            <button id="group-settings-pic-cancel" class="settings-btn" style="background:#ef4444;color:#fff;box-shadow:0 0 12px rgba(239,68,68,0.6);">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <label class="settings-label">Group Access</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="checkbox" id="group-join-disabled">
+          <label for="group-join-disabled">Disable joining by code</label>
+        </div>
+      </div>
+      <div class="settings-section">
+        <label class="settings-label">Members</label>
+        <div id="group-members-list" style="max-height:260px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;padding:8px;background:#fff;"></div>
+      </div>
+      <div class="profile-actions-row">
+        <button id="save-group-settings-btn" class="settings-btn profile-action-btn" style="background:#22c55e;color:#fff;box-shadow:0 0 12px rgba(34,197,94,0.6);">Save Changes</button>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="script.js"></script>
+  <style>
+    .settings-content {
+      max-height: 80vh;
+      overflow-y: auto;
+      scrollbar-width: none; /* Firefox */
+    }
+    .settings-content::-webkit-scrollbar {
+      display: none; /* Chrome, Safari */
+    }
+  </style>
+</body>
+</html> 

@@ -861,9 +861,10 @@ app.post('/users/:code/upload-profile-picture', upload.single('profilePicture'),
 
     // Update user's profile picture with the new file URL
     // Always use the backend server URL (port 5000) for profile pictures
+  // Detect the host automatically (works for both localhost and production)
+    const host = req.get('host'); 
     const protocol = req.protocol;
-    const hostname = req.get('host').split(':')[0]; // Get hostname without port
-    const fileUrl = `${protocol}://${hostname}:5000/uploads/${req.file.filename}`;
+    const fileUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
     user.profilePicture = fileUrl;
     await user.save();
 
@@ -929,9 +930,10 @@ app.post('/admin/fix-profile-pictures', async (req, res) => {
     let fixedCount = 0;
 
     for (const user of users) {
-      if (user.profilePicture && user.profilePicture.includes(':3000/uploads/')) {
-        // Fix the URL to point to port 5000
-        user.profilePicture = user.profilePicture.replace(':3000/uploads/', ':5000/uploads/');
+      if (user.profilePicture && (user.profilePicture.includes(':3000') || user.profilePicture.includes(':5000'))) {
+        const host = req.get('host');
+        // This regex removes the old port and replaces it with the current actual host
+        user.profilePicture = user.profilePicture.replace(/:\d+\/uploads\//, `://${host}/uploads/`);
         await user.save();
         fixedCount++;
       }
@@ -1304,3 +1306,4 @@ server.listen(PORT, () => {
   console.log(`📱 Frontend should be available at the served URL`);
   console.log(`🛑 Press Ctrl+C to stop the server gracefully`);
 });
+module.exports = app;

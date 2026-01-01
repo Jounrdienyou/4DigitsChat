@@ -1,18 +1,20 @@
 {
-  "name": "server",
+  "name": "4digits-chat",
   "version": "1.0.0",
-  "main": "server.js",
+  "main": "server/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server/server.js"
+    "start": "node server/server.js",
+    "dev": "node server/server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "4Digits Chat Application",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
     "express": "^5.1.0",
     "mongoose": "^8.16.1",
     "multer": "^2.0.1",

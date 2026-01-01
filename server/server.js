@@ -21,13 +21,19 @@ app.use(express.json({ limit: '200mb' }));
 app.use(express.urlencoded({ limit: '200mb', extended: true }));
 
 // Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, 'uploads');
+// On Vercel, use /tmp for temporary files (ephemeral storage)
+// Note: Files in /tmp are deleted after function execution
+// For production, consider using cloud storage (S3, Cloudinary, etc.)
+const uploadsDir = process.env.VERCEL 
+  ? path.join('/tmp', 'uploads')
+  : path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
 // Serve uploaded files statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// On Vercel, files are served differently - consider using cloud storage URLs
+app.use('/uploads', express.static(uploadsDir));
 
 // Serve frontend files from the public directory
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -113,7 +119,12 @@ db.once('open', () => {
 // Store connected users by code
 const connectedUsers = {};
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+// Socket.IO configuration - may not work on Vercel serverless
+// For production, consider using a separate WebSocket service
+const io = new Server(server, { 
+  cors: { origin: '*' },
+  transports: ['websocket', 'polling'] // Fallback to polling if websocket fails
+});
 
 io.on('connection', (socket) => {
   socket.on('register', async (code) => {
@@ -860,11 +871,13 @@ app.post('/users/:code/upload-profile-picture', upload.single('profilePicture'),
     }
 
     // Update user's profile picture with the new file URL
-    // Always use the backend server URL (port 5000) for profile pictures
-  // Detect the host automatically (works for both localhost and production)
+    // Detect the host automatically (works for both localhost and production)
     const host = req.get('host'); 
     const protocol = req.protocol;
-    const fileUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+    // For Vercel/production, use /api prefix for API routes
+    const isProduction = !host.includes('localhost') && !host.includes('127.0.0.1');
+    const apiPrefix = isProduction ? '/api' : '';
+    const fileUrl = `${protocol}://${host}${apiPrefix}/uploads/${req.file.filename}`;
     user.profilePicture = fileUrl;
     await user.save();
 
@@ -932,8 +945,15 @@ app.post('/admin/fix-profile-pictures', async (req, res) => {
     for (const user of users) {
       if (user.profilePicture && (user.profilePicture.includes(':3000') || user.profilePicture.includes(':5000'))) {
         const host = req.get('host');
+        const protocol = req.protocol;
+        const isProduction = !host.includes('localhost') && !host.includes('127.0.0.1');
+        const apiPrefix = isProduction ? '/api' : '';
         // This regex removes the old port and replaces it with the current actual host
-        user.profilePicture = user.profilePicture.replace(/:\d+\/uploads\//, `://${host}/uploads/`);
+        user.profilePicture = user.profilePicture.replace(/:\d+\/uploads\//, `${apiPrefix}/uploads/`);
+        // Ensure full URL
+        if (!user.profilePicture.startsWith('http')) {
+          user.profilePicture = `${protocol}://${host}${user.profilePicture}`;
+        }
         await user.save();
         fixedCount++;
       }
@@ -1299,11 +1319,23 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-// Start server with Socket.IO
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📱 Frontend should be available at the served URL`);
-  console.log(`🛑 Press Ctrl+C to stop the server gracefully`);
-});
+// Export for Vercel serverless functions
+// Vercel will use this as the handler
 module.exports = app;
+
+// Only start the server if not in Vercel environment
+// Vercel uses serverless functions, so we don't need to listen on a port
+if (process.env.VERCEL !== '1') {
+  // Start server with Socket.IO (for local development)
+  const PORT = process.env.PORT || 5000;
+  server.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📱 Frontend should be available at the served URL`);
+    console.log(`🛑 Press Ctrl+C to stop the server gracefully`);
+  });
+} else {
+  // In Vercel, Socket.IO won't work with serverless functions
+  // You'll need a separate service for real-time features
+  console.log('⚠️  Running on Vercel - Socket.IO real-time features may not work');
+  console.log('💡 Consider using a separate WebSocket service for production');
+}

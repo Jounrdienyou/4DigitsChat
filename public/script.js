@@ -1,21 +1,38 @@
 document.addEventListener('DOMContentLoaded', function() {
   // --- Dynamic API base and Socket base ---
-  // Determine API base that works across networks
+  // Determine API base that works across networks (local and production)
   const DEFAULT_API_BASE = (() => {
     try {
       const { protocol, hostname, port } = window.location;
+      // For local file protocol (testing), use localhost
       if (protocol === 'file:') return 'http://localhost:5000';
-      // Always use port 5000 for backend API, regardless of frontend port
-      if (port && port !== '5000') return `${protocol}//${hostname}:5000`;
-      // If no port or already 5000
-      return `${protocol}//${hostname}${port ? ':' + port : ''}`;
+      // For production (Vercel), use the same origin (no port needed)
+      // For local development with port, use that port
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        // Local development - use port 5000 for backend
+        return port && port !== '5000' ? `${protocol}//${hostname}:5000` : `${protocol}//${hostname}${port ? ':' + port : ':5000'}`;
+      }
+      // Production - use same origin (Vercel handles routing)
+      return `${protocol}//${hostname}`;
     } catch (_) {
+      // Fallback for local development
       return 'http://localhost:5000';
     }
   })().replace(/\/$/, '');
   const API_BASE = (localStorage.getItem('API_BASE') || DEFAULT_API_BASE).replace(/\/$/, '');
-  function api(path) { return `${API_BASE}${path}`; }
-  function socketBase() { return API_BASE; }
+  function api(path) { 
+    // For Vercel, API routes are under /api
+    const isProduction = !API_BASE.includes('localhost') && !API_BASE.includes('127.0.0.1');
+    const basePath = isProduction ? '/api' : '';
+    return `${API_BASE}${basePath}${path}`;
+  }
+  function socketBase() { 
+    // For production, Socket.IO needs the same origin
+    // Note: Socket.IO may not work on Vercel serverless functions
+    // Consider using a separate WebSocket service for production
+    const isProduction = !API_BASE.includes('localhost') && !API_BASE.includes('127.0.0.1');
+    return isProduction ? window.location.origin : API_BASE;
+  }
   const userCache = new Map();
   const pendingUserLookups = new Set();
   const rtcConfig = {
@@ -36,10 +53,25 @@ document.addEventListener('DOMContentLoaded', function() {
   const NOTIFICATION_SRC = 'assets/notification.mp3';
   let ringtoneAudio = null;
   
-  // Helper function to fix URLs that point to wrong port
+  // Helper function to fix URLs that point to wrong port or need production updates
   function fixUrlPort(url) {
-    if (url && url.includes(':3000/uploads/')) {
+    if (!url) return url;
+    // Fix old localhost port references
+    if (url.includes(':3000/uploads/')) {
+      const isProduction = !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1');
+      if (isProduction) {
+        // In production, use /api/uploads
+        return url.replace(/:\d+\/uploads\//, '/api/uploads/');
+      }
       return url.replace(':3000/uploads/', ':5000/uploads/');
+    }
+    // Fix any localhost:port references in production
+    if (url.includes('localhost:') || url.includes('127.0.0.1:')) {
+      const isProduction = !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1');
+      if (isProduction) {
+        const { protocol, hostname } = window.location;
+        return url.replace(/https?:\/\/[^\/]+/, `${protocol}//${hostname}`);
+      }
     }
     return url;
   }
@@ -98,10 +130,14 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       // If it's a relative path, make it absolute
       if (profilePicture.startsWith('/uploads/')) {
-        return `${API_BASE}${profilePicture}`;
+        const isProduction = !API_BASE.includes('localhost') && !API_BASE.includes('127.0.0.1');
+        const basePath = isProduction ? '/api' : '';
+        return `${API_BASE}${basePath}${profilePicture}`;
       }
       // If it's just a filename, assume it's in uploads
-      return `${API_BASE}/uploads/${profilePicture}`;
+      const isProduction = !API_BASE.includes('localhost') && !API_BASE.includes('127.0.0.1');
+      const basePath = isProduction ? '/api' : '';
+      return `${API_BASE}${basePath}/uploads/${profilePicture}`;
     }
     const seed = fallbackSeed || username || 'default';
     return `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(seed)}`;
